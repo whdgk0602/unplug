@@ -1,0 +1,78 @@
+# Claude Code
+.claude/
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code
+.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+flutter_export_environment.sh
+
+# Generated Dart files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android - Build artifacts
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Android - Signing (절대 커밋 금지)
+key.properties
+*.jks
+*.keystore
+/android/app/*.jks
+/android/app/*.keystore
+
+# Android - Local config
+/android/local.properties
+
+# Firebase (사용 시 커밋 금지)
+google-services.json
+GoogleService-Info.plist
+
+# Environment variables
+.env
+.env.*
+!.env.example

@@ -1,0 +1,55 @@
+name: project001
+description: "Unplug - 안 쓸수록 이기는 디지털 웰빙 앱"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+  sqflite: ^2.3.3+1
+  path_provider: ^2.1.3
+  path: ^1.9.0
+  fl_chart: ^0.69.0
+  google_fonts: ^6.2.1
+  go_router: ^14.0.0
+  intl: ^0.19.0
+  flutter_native_splash: ^2.4.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/unplug_appicon.png"
+  adaptive_icon_background: "#F0F9FF"
+  adaptive_icon_foreground: "assets/images/unplug_appicon.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#F0F9FF"
+  image: assets/images/unplug_splash.png
+  color_dark: "#1A2A3A"
+  image_dark: assets/images/unplug_splash.png
+  android_12:
+    image: assets/images/unplug_appicon.png
+    icon_background_color: "#F0F9FF"
+    image_dark: assets/images/unplug_appicon.png
+    icon_background_color_dark: "#1A2A3A"
+  fullscreen: true
+  android: true
+  ios: false
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
