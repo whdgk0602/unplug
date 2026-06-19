@@ -77,6 +77,39 @@ class _SplashScreen extends ConsumerWidget {
       });
     });
 
+    if (settingsAsync.hasError) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: AppColors.error),
+                const SizedBox(height: 16),
+                const Text(
+                  '데이터를 불러오지 못했어요',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '앱을 다시 시작해도 문제가 계속되면\n데이터 초기화가 필요할 수 있어요.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(settingsProvider),
+                  child: const Text('다시 시도'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return const Scaffold(
       backgroundColor: AppColors.background,
       body: Center(

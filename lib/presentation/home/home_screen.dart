@@ -6,6 +6,7 @@ import 'package:project001/core/theme/app_colors.dart';
 import 'package:project001/core/utils/time_formatter.dart';
 import 'package:project001/data/models/daily_record_model.dart';
 import 'package:project001/data/models/world_state_model.dart';
+import 'package:project001/data/services/widget_service.dart';
 import 'package:project001/presentation/home/widgets/island_widget.dart';
 import 'package:project001/presentation/providers/providers.dart';
 
@@ -25,9 +26,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final settings = ref.read(settingsProvider).value;
       if (settings != null) {
-          await ref.read(todayRecordProvider.notifier).refresh(settings);
-        await ref.read(worldProvider.notifier).addResource(0);
-        await ref.read(worldProvider.notifier).reload();
+        final notifier = ref.read(todayRecordProvider.notifier);
+        final record = await notifier.refresh(settings);
+        if (notifier.lastResourceDelta > 0) {
+          await ref.read(worldProvider.notifier).addResource(notifier.lastResourceDelta);
+        }
+        final world = ref.read(worldProvider).value;
+        if (world != null) {
+          await WidgetService.update(
+            world: world,
+            todayUnusedMinutes: record.unusedMinutes,
+            todayResourceEarned: record.resourceEarned,
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isRefreshing = false);

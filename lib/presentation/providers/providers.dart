@@ -127,7 +127,10 @@ class TodayRecordNotifier extends StateNotifier<AsyncValue<DailyRecordModel?>> {
     }
   }
 
+  int lastResourceDelta = 0;
+
   Future<DailyRecordModel> refresh(SettingsModel settings) async {
+    final previous = await _recordRepo.getTodayRecord();
     final usageMinutes = await _screenTimeService.getTodayUsageMinutes();
     final unusedMinutes = (settings.targetUsageMinutes - usageMinutes).clamp(0, settings.targetUsageMinutes);
     final resourceEarned = unusedMinutes * AppConstants.resourcePerMinute;
@@ -142,6 +145,8 @@ class TodayRecordNotifier extends StateNotifier<AsyncValue<DailyRecordModel?>> {
     );
 
     await _recordRepo.upsertRecord(record);
+    // 같은 날 여러 번 새로고침해도 중복 적립되지 않도록 이전 값과의 차이만 반영
+    lastResourceDelta = resourceEarned - (previous?.resourceEarned ?? 0);
     state = AsyncValue.data(record);
     return record;
   }

@@ -6,6 +6,7 @@ import 'package:project001/core/theme/app_colors.dart';
 import 'package:project001/core/utils/time_formatter.dart';
 import 'package:project001/data/models/growth_history_model.dart';
 import 'package:project001/data/models/world_state_model.dart';
+import 'package:project001/data/services/share_service.dart';
 import 'package:project001/presentation/home/widgets/island_widget.dart';
 import 'package:project001/presentation/providers/providers.dart';
 
@@ -17,9 +18,10 @@ class WorldDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _WorldDetailScreenState extends ConsumerState<WorldDetailScreen> {
-  final GlobalKey _repaintKey = GlobalKey();
+  final GlobalKey _shareCardKey = GlobalKey();
   List<GrowthHistoryModel> _history = [];
   bool _loadingHistory = true;
+  bool _isSharing = false;
 
   @override
   void initState() {
@@ -34,18 +36,23 @@ class _WorldDetailScreenState extends ConsumerState<WorldDetailScreen> {
   }
 
   Future<void> _shareCard() async {
+    if (_isSharing) return;
+    setState(() => _isSharing = true);
     try {
-      final boundary = _repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      // Offstage 위젯이 첫 프레임을 그릴 시간을 준다.
+      await Future.delayed(const Duration(milliseconds: 50));
+      final boundary = _shareCardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return;
+
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return;
-      // In a production app, use share_plus package to share the image.
-      // For MVP, show a success message.
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('공유 기능은 곧 추가됩니다 🌱')),
-        );
+
+      final file = await ShareService.savePngToTemp(byteData.buffer.asUint8List());
+
+      final sentToInstagram = await ShareService.shareToInstagramStory(file);
+      if (!sentToInstagram) {
+        await ShareService.shareGeneric(file, text: '나의 섬이 자라고 있어요 🌱 Unplug');
       }
     } catch (_) {
       if (mounted) {
@@ -53,6 +60,8 @@ class _WorldDetailScreenState extends ConsumerState<WorldDetailScreen> {
           const SnackBar(content: Text('공유 카드 생성 중 오류가 발생했어요')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
     }
   }
 
@@ -69,22 +78,43 @@ class _WorldDetailScreenState extends ConsumerState<WorldDetailScreen> {
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.ios_share_rounded),
-            tooltip: '공유 카드 만들기',
-            onPressed: _shareCard,
+            icon: _isSharing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  )
+                : const Icon(Icons.ios_share_rounded),
+            tooltip: '인스타 스토리로 공유',
+            onPressed: _isSharing ? null : _shareCard,
           ),
         ],
       ),
       body: worldAsync.when(
-        data: (world) => CustomScrollView(
+        data: (world) => Stack(
+          children: [
+            // 화면 밖으로 위치시켜 렌더링되는 9:16 공유 카드 (Instagram 스토리용)
+            // Offstage는 paint()를 건너뛰어 캡처가 빈 이미지가 되므로 Positioned로 화면 밖에 배치한다.
+            Positioned(
+              left: -9999,
+              top: 0,
+              child: IgnorePointer(
+                child: RepaintBoundary(
+                  key: _shareCardKey,
+                  child: _ShareCardContent(
+                    world: world,
+                    totalMinutes: totalAsync.value ?? 0,
+                  ),
+                ),
+              ),
+            ),
+            CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Column(
                 children: [
                   // Full island visual
-                  RepaintBoundary(
-                    key: _repaintKey,
-                    child: Container(
+                  Container(
                       width: double.infinity,
                       height: MediaQuery.of(context).size.width,
                       decoration: const BoxDecoration(
@@ -98,7 +128,6 @@ class _WorldDetailScreenState extends ConsumerState<WorldDetailScreen> {
                         child: IslandWidget(stage: world.stage, size: MediaQuery.of(context).size.width * 0.85),
                       ),
                     ),
-                  ),
 
                   Padding(
                     padding: const EdgeInsets.all(20),
@@ -149,8 +178,70 @@ class _WorldDetailScreenState extends ConsumerState<WorldDetailScreen> {
             ),
           ],
         ),
+          ],
+        ),
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (_, __) => const Center(child: Text('오류가 발생했어요')),
+      ),
+    );
+  }
+}
+
+// ── Instagram 스토리용 9:16 공유 카드 (화면에는 보이지 않고 캡처 전용) ─────────────────
+
+class _ShareCardContent extends StatelessWidget {
+  final WorldStateModel world;
+  final int totalMinutes;
+
+  const _ShareCardContent({required this.world, required this.totalMinutes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      child: SizedBox(
+        width: 360,
+        height: 640,
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: AppColors.skyGradient,
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Unplug',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryDark,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 24),
+              IslandWidget(stage: world.stage, size: 220, animate: false),
+              const SizedBox(height: 24),
+              IslandStageLabel(stage: world.stage),
+              const SizedBox(height: 16),
+              Text(
+                '총 ${TimeFormatter.formatMinutes(totalMinutes)} 절약했어요',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '덜 쓸수록 자라나는 세계',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

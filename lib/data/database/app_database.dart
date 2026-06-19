@@ -85,7 +85,19 @@ class AppDatabase {
   }
 
   Future<void> initialize() async {
-    await database;
+    try {
+      await database;
+    } catch (_) {
+      // DB 파일 손상 등으로 열기 실패 시, 파일을 삭제하고 재생성해 영구 멈춤을 방지
+      await _deleteDatabaseFile();
+      _database = await _initDatabase();
+    }
+  }
+
+  Future<void> _deleteDatabaseFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final path = join(dir.path, 'unplug.db');
+    await deleteDatabase(path);
   }
 
   Future<void> close() async {
